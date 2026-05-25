@@ -1,0 +1,28 @@
+{
+  "name": "server",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "dev": "nodemon server.js",
+    "start": "node server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@emailjs/nodejs": "^5.0.2",
+    "body-parser": "^2.2.2",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "mongoose": "^9.6.2",
+    "mongose": "^0.0.2-security",
+    "nodemailer": "^8.0.7",
+    "nodemon": "^3.1.14",
+    "paypal-rest-sdk": "^1.8.1",
+    "pdfkit": "^0.18.0",
+    "qrcode": "^1.5.4",
+    "stripe": "^22.1.1"
+  }
+}
