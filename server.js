@@ -33,6 +33,9 @@ mongoose.connect(process.env.MONGO_URI)
 // =========================
 // ROUTES
 // =========================
+app.get('/', (req, res) => {
+  res.send('USAI API is running 🚀')
+})
 app.use('/api/reservations', reservationRoutes)
 app.use('/api/adminreservations', adminRoutes)
 app.use('/api/stripe', stripeRoutes)
