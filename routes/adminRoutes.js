@@ -98,8 +98,6 @@ router.post("/create", async (req, res) => {
   } catch (err) {
     console.error(err)
     console.log("🔥 NEW CREATE HIT")
-    console.log("PARTICIPANTS:", participants)
-    console.log("TOTAL CALCUL:", totalAmount)
     res.status(500).json({ message: "Server error" })
   }
 })
