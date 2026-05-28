@@ -2,51 +2,33 @@ const express = require("express")
 const router = express.Router()
 
 const Reservation = require("../models/Reservation")
+
 const connectDB = require("../db")
 
-// =========================
-// PRICING LOGIC (CENTRALISÉ)
-// =========================
-const getTotalAmount = (participants) => {
-  return participants.reduce((acc, p) => {
-    return acc + (p.sex === "M" ? 100 : 80)
-  }, 0)
-}
-
-const getPaidAmount = (reservationType, participants, paidAmountInput) => {
-  // FULL = tout payé
-  if (reservationType === "full") {
-    return getTotalAmount(participants)
-  }
-
-  // PARTIAL = acompte libre (ou 25€/personne si vide)
-  return paidAmountInput ?? participants.length * 25
-}
-
-// =========================
-// GET ALL
-// =========================
+// ======================================================
+// GET ALL RESERVATIONS
+// ======================================================
 router.get("/", async (req, res) => {
   try {
     await connectDB()
 
-    const reservations = await Reservation.find().sort({ createdAt: -1 })
+    const reservations = await Reservation.find().sort({
+      createdAt: -1
+    })
 
     res.json(reservations)
   } catch (err) {
-    console.error("GET ALL ERROR:", err)
+    console.log(err)
     res.status(500).json({ message: "Server error" })
   }
 })
 
-// =========================
-// GET ONE
-// =========================
+// ======================================================
+// GET ONE RESERVATION (by ID)
+// ======================================================
 router.get("/:id", async (req, res) => {
   try {
     await connectDB()
-
-    const reservation = await Reservation.findById(req.params.id)
 
     if (!reservation) {
       return res.status(404).json({ message: "Not found" })
@@ -54,39 +36,48 @@ router.get("/:id", async (req, res) => {
 
     res.json(reservation)
   } catch (err) {
-    console.error("GET ONE ERROR:", err)
+    console.log(err)
     res.status(500).json({ message: "Server error" })
   }
 })
 
-// =========================
-// CREATE
-// =========================
+// ======================================================
+// CREATE RESERVATION
+// ======================================================
 router.post("/create", async (req, res) => {
   try {
-    const { email, reservationType, participants, paidAmount } = req.body
+    const {
+      email,
+      reservationType,
+      participants
+    } = req.body
 
-    const totalAmount = participants.reduce((acc, p) => {
-      return acc + (p.sex === "M" ? 100 : 80)
-    }, 0)
+    // code unique simple
+    const reservationCode =
+      "USAI-" + Math.random().toString(36).substring(2, 8).toUpperCase()
 
-    const finalPaid = reservationType === "full"
-      ? totalAmount
-      : paidAmount
+    // calcul prix
+    let totalAmount = 0
+
+    if (reservationType === "partial") {
+      totalAmount = participants.length * 25
+    } else {
+      participants.forEach((p) => {
+        totalAmount += p.sex === "M" ? 100 : 80
+      })
+    }
 
     const reservation = new Reservation({
       email,
       reservationType,
       participants,
-
-      reservationCode:
-        "USAI-" + Math.random().toString(36).substring(2, 8).toUpperCase(),
-
+      reservationCode,
       totalAmount,
-      paidAmount: finalPaid,
-      remainingAmount: totalAmount - finalPaid,
-
-      paymentStatus: finalPaid >= totalAmount ? "completed" : "partial"
+      paidAmount: reservationType === "full" ? totalAmount : 25 * participants.length,
+      remainingAmount:
+        totalAmount - (reservationType === "full" ? totalAmount : 25 * participants.length),
+      paymentStatus:
+        reservationType === "full" ? "completed" : "partial"
     })
 
     await reservation.save()
@@ -98,14 +89,18 @@ router.post("/create", async (req, res) => {
   }
 })
 
-// =========================
-// UPDATE
-// =========================
+// ======================================================
+// UPDATE RESERVATION
+// ======================================================
 router.put("/:id", async (req, res) => {
   try {
-    await connectDB()
-
-    const { email, reservationType, participants, paidAmount, paymentStatus } = req.body
+    const {
+      email,
+      reservationType,
+      participants,
+      paidAmount,
+      paymentStatus
+    } = req.body
 
     const reservation = await Reservation.findById(req.params.id)
 
@@ -113,36 +108,39 @@ router.put("/:id", async (req, res) => {
       return res.status(404).json({ message: "Not found" })
     }
 
-    const totalAmount = getTotalAmount(participants)
-    const finalPaidAmount = getPaidAmount(reservationType, participants, paidAmount)
+    // recalcul prix
+    let totalAmount = 0
+
+    if (reservationType === "partial") {
+      totalAmount = participants.length * 25
+    } else {
+      participants.forEach((p) => {
+        totalAmount += p.sex === "M" ? 100 : 80
+      })
+    }
 
     reservation.email = email
     reservation.reservationType = reservationType
     reservation.participants = participants
-
+    reservation.paidAmount = paidAmount
+    reservation.paymentStatus = paymentStatus
     reservation.totalAmount = totalAmount
-    reservation.paidAmount = finalPaidAmount
-    reservation.remainingAmount = totalAmount - finalPaidAmount
-
-    reservation.paymentStatus =
-      finalPaidAmount >= totalAmount ? "completed" : "partial"
+    reservation.remainingAmount = totalAmount - paidAmount
 
     await reservation.save()
 
     res.json(reservation)
   } catch (err) {
-    console.error("UPDATE ERROR:", err)
+    console.log(err)
     res.status(500).json({ message: "Server error" })
   }
 })
 
-// =========================
-// DELETE
-// =========================
+// ======================================================
+// DELETE RESERVATION
+// ======================================================
 router.delete("/:id", async (req, res) => {
   try {
-    await connectDB()
-
     const reservation = await Reservation.findById(req.params.id)
 
     if (!reservation) {
@@ -153,7 +151,7 @@ router.delete("/:id", async (req, res) => {
 
     res.json({ message: "Deleted successfully" })
   } catch (err) {
-    console.error("DELETE ERROR:", err)
+    console.log(err)
     res.status(500).json({ message: "Server error" })
   }
 })
