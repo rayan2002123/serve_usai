@@ -78,10 +78,10 @@ router.post(
           ],
 
           success_url:
-            'http://localhost:5173/success?session_id={CHECKOUT_SESSION_ID}',
+            'https://united-students.vercel.app/success?session_id={CHECKOUT_SESSION_ID}',
 
           cancel_url:
-            'http://localhost:5173/cancel',
+            'https://united-students.vercel.app/cancel',
 
           metadata: {
             reservationId
