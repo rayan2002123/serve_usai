@@ -26,9 +26,18 @@ app.use(express.json())
 // =========================
 // DATABASE
 // =========================
-mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log("MongoDB connected"))
-  .catch(err => console.error("MongoDB error:", err))
+const connectDB = async () => {
+  try {
+    if (mongoose.connection.readyState === 1) return
+
+    await mongoose.connect(process.env.MONGO_URI)
+    console.log("MongoDB connected")
+  } catch (err) {
+    console.error("MongoDB connection error:", err)
+  }
+}
+
+connectDB()
 
 // =========================
 // ROUTES
