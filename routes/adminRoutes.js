@@ -93,6 +93,8 @@ router.post("/create", async (req, res) => {
     })
 
     await reservation.save()
+    console.log("PARTICIPANTS:", participants)
+    console.log("TOTAL CALCULÉ:", getTotalAmount(participants))
 
     res.json(reservation)
   } catch (err) {
