@@ -69,11 +69,10 @@ router.post("/create", async (req, res) => {
 
     const totalAmount = getTotalAmount(participants)
 
-    // IMPORTANT LOGIC FIX
     const paidAmount =
       reservationType === "full"
         ? totalAmount
-        : DEPOSIT
+        : Number(req.body.paidAmount || 0)
 
     const remainingAmount = totalAmount - paidAmount
 
