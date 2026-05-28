@@ -64,31 +64,36 @@ router.get("/:id", async (req, res) => {
 // =========================
 router.post("/create", async (req, res) => {
   try {
-    await connectDB()
-
     const { email, reservationType, participants, paidAmount } = req.body
 
-    const totalAmount = getTotalAmount(participants)
-    const finalPaidAmount = getPaidAmount(reservationType, participants, paidAmount)
+    const totalAmount = participants.reduce((acc, p) => {
+      return acc + (p.sex === "M" ? 100 : 80)
+    }, 0)
+
+    const finalPaid = reservationType === "full"
+      ? totalAmount
+      : paidAmount
 
     const reservation = new Reservation({
       email,
       reservationType,
       participants,
-      reservationCode: "USAI-" + Math.random().toString(36).substring(2, 8).toUpperCase(),
+
+      reservationCode:
+        "USAI-" + Math.random().toString(36).substring(2, 8).toUpperCase(),
 
       totalAmount,
-      paidAmount: finalPaidAmount,
-      remainingAmount: totalAmount - finalPaidAmount,
+      paidAmount: finalPaid,
+      remainingAmount: totalAmount - finalPaid,
 
-      paymentStatus: finalPaidAmount >= totalAmount ? "completed" : "partial"
+      paymentStatus: finalPaid >= totalAmount ? "completed" : "partial"
     })
 
     await reservation.save()
 
     res.json(reservation)
   } catch (err) {
-    console.error("CREATE ERROR:", err)
+    console.log(err)
     res.status(500).json({ message: "Server error" })
   }
 })
