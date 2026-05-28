@@ -60,7 +60,9 @@ router.post("/create", async (req, res) => {
     let totalAmount = 0
 
     if (reservationType === "partial") {
-      totalAmount = participants.length * 25
+      totalAmount = participants.reduce((acc, p) => {
+        return acc + (p.sex === "M" ? 100 : 80)
+      }, 0)
     } else {
       participants.forEach((p) => {
         totalAmount += p.sex === "M" ? 100 : 80
@@ -112,7 +114,9 @@ router.put("/:id", async (req, res) => {
     let totalAmount = 0
 
     if (reservationType === "partial") {
-      totalAmount = participants.length * 25
+      totalAmount = participants.reduce((acc, p) => {
+        return acc + (p.sex === "M" ? 100 : 80)
+      }, 0)
     } else {
       participants.forEach((p) => {
         totalAmount += p.sex === "M" ? 100 : 80
