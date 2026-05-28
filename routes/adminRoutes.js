@@ -3,11 +3,15 @@ const router = express.Router()
 
 const Reservation = require("../models/Reservation")
 
+const connectDB = require("../db")
+
 // ======================================================
 // GET ALL RESERVATIONS
 // ======================================================
 router.get("/", async (req, res) => {
   try {
+    await connectDB()
+
     const reservations = await Reservation.find().sort({
       createdAt: -1
     })
@@ -24,7 +28,7 @@ router.get("/", async (req, res) => {
 // ======================================================
 router.get("/:id", async (req, res) => {
   try {
-    const reservation = await Reservation.findById(req.params.id)
+    await connectDB()
 
     if (!reservation) {
       return res.status(404).json({ message: "Not found" })
