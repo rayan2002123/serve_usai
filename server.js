@@ -16,7 +16,7 @@ const app = express()
 app.use(cors({
   origin: [
     "http://localhost:5173",
-    "https://united-students.vercel.app",
+    //"https://united-students.vercel.app",
     "https://eaved-suzi-shaftless.ngrok-free.dev"
   ],
   credentials: true
