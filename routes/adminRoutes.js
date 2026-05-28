@@ -4,8 +4,10 @@ const router = express.Router()
 const Reservation = require("../models/Reservation")
 const connectDB = require("../db")
 
+const DEPOSIT = 25
+
 // =========================
-// PRICE LOGIC (CORRIGÉE)
+// TOTAL REAL PRICE
 // =========================
 const getTotalAmount = (participants) => {
   return participants.reduce((acc, p) => {
@@ -14,17 +16,24 @@ const getTotalAmount = (participants) => {
 }
 
 // =========================
+// CONNECT DB MIDDLEWARE SAFE
+// =========================
+const ensureDB = async () => {
+  await connectDB()
+}
+
+// =========================
 // GET ALL
 // =========================
 router.get("/", async (req, res) => {
   try {
-    await connectDB()
+    await ensureDB()
 
     const reservations = await Reservation.find().sort({ createdAt: -1 })
 
     res.json(reservations)
   } catch (err) {
-    console.error("GET ALL ERROR:", err)
+    console.error(err)
     res.status(500).json({ message: "Server error" })
   }
 })
@@ -34,7 +43,7 @@ router.get("/", async (req, res) => {
 // =========================
 router.get("/:id", async (req, res) => {
   try {
-    await connectDB()
+    await ensureDB()
 
     const reservation = await Reservation.findById(req.params.id)
 
@@ -44,7 +53,7 @@ router.get("/:id", async (req, res) => {
 
     res.json(reservation)
   } catch (err) {
-    console.error("GET ONE ERROR:", err)
+    console.error(err)
     res.status(500).json({ message: "Server error" })
   }
 })
@@ -54,17 +63,19 @@ router.get("/:id", async (req, res) => {
 // =========================
 router.post("/create", async (req, res) => {
   try {
-    await connectDB()
+    await ensureDB()
 
-    const { email, reservationType, participants, paidAmount } = req.body
+    const { email, reservationType, participants } = req.body
 
     const totalAmount = getTotalAmount(participants)
 
-    // IMPORTANT: partial = acompte, full = total
-    const finalPaidAmount =
+    // IMPORTANT LOGIC FIX
+    const paidAmount =
       reservationType === "full"
         ? totalAmount
-        : (paidAmount ?? 25)
+        : DEPOSIT
+
+    const remainingAmount = totalAmount - paidAmount
 
     const reservation = new Reservation({
       email,
@@ -75,18 +86,17 @@ router.post("/create", async (req, res) => {
         "USAI-" + Math.random().toString(36).substring(2, 8).toUpperCase(),
 
       totalAmount,
-      paidAmount: finalPaidAmount,
-      remainingAmount: totalAmount - finalPaidAmount,
+      paidAmount,
+      remainingAmount,
 
-      paymentStatus:
-        finalPaidAmount >= totalAmount ? "completed" : "partial"
+      paymentStatus: paidAmount >= totalAmount ? "completed" : "partial"
     })
 
     await reservation.save()
 
     res.json(reservation)
   } catch (err) {
-    console.error("CREATE ERROR:", err)
+    console.error(err)
     res.status(500).json({ message: "Server error" })
   }
 })
@@ -96,9 +106,9 @@ router.post("/create", async (req, res) => {
 // =========================
 router.put("/:id", async (req, res) => {
   try {
-    await connectDB()
+    await ensureDB()
 
-    const { email, reservationType, participants, paidAmount, paymentStatus } = req.body
+    const { email, reservationType, participants, paidAmount } = req.body
 
     const reservation = await Reservation.findById(req.params.id)
 
@@ -108,27 +118,27 @@ router.put("/:id", async (req, res) => {
 
     const totalAmount = getTotalAmount(participants)
 
-    const finalPaidAmount =
+    const finalPaid =
       reservationType === "full"
         ? totalAmount
-        : (paidAmount ?? 25)
+        : (paidAmount ?? DEPOSIT)
 
     reservation.email = email
     reservation.reservationType = reservationType
     reservation.participants = participants
 
     reservation.totalAmount = totalAmount
-    reservation.paidAmount = finalPaidAmount
-    reservation.remainingAmount = totalAmount - finalPaidAmount
+    reservation.paidAmount = finalPaid
+    reservation.remainingAmount = totalAmount - finalPaid
 
     reservation.paymentStatus =
-      finalPaidAmount >= totalAmount ? "completed" : "partial"
+      finalPaid >= totalAmount ? "completed" : "partial"
 
     await reservation.save()
 
     res.json(reservation)
   } catch (err) {
-    console.error("UPDATE ERROR:", err)
+    console.error(err)
     res.status(500).json({ message: "Server error" })
   }
 })
@@ -138,19 +148,13 @@ router.put("/:id", async (req, res) => {
 // =========================
 router.delete("/:id", async (req, res) => {
   try {
-    await connectDB()
-
-    const reservation = await Reservation.findById(req.params.id)
-
-    if (!reservation) {
-      return res.status(404).json({ message: "Not found" })
-    }
+    await ensureDB()
 
     await Reservation.findByIdAndDelete(req.params.id)
 
     res.json({ message: "Deleted successfully" })
   } catch (err) {
-    console.error("DELETE ERROR:", err)
+    console.error(err)
     res.status(500).json({ message: "Server error" })
   }
 })
