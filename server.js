@@ -1,18 +1,16 @@
-const express = require('express')
-const cors = require('cors')
-const mongoose = require('mongoose')
+const express = require("express");
+const cors = require("cors");
+const mongoose = require("mongoose");
 
-require('dotenv').config()
+require("dotenv").config();
 
-const adminRoutes = require('./routes/adminRoutes')
-const reservationRoutes = require('./routes/reservationRoutes')
-const stripeRoutes = require('./routes/stripeRoutes')
+const adminRoutes = require("../routes/adminRoutes");
+const reservationRoutes = require("../routes/reservationRoutes");
+const stripeRoutes = require("../routes/stripeRoutes");
 
-const app = express()
+const app = express();
 
-// =========================
-// CORS (PROD READY)
-// =========================
+// CORS
 app.use(cors({
   origin: [
     "https://united-of-student.vercel.app",
@@ -20,45 +18,37 @@ app.use(cors({
     "http://localhost:5173"
   ],
   credentials: true
-}))
+}));
 
-app.use(express.json())
+app.use(express.json());
 
-// =========================
-// DATABASE
-// =========================
+// MongoDB
+let isConnected = false;
+
 const connectDB = async () => {
+  if (isConnected) return;
+
   try {
-    if (mongoose.connection.readyState === 1) return
-
-    await mongoose.connect(process.env.MONGO_URI)
-    console.log("MongoDB connected")
+    await mongoose.connect(process.env.MONGO_URI);
+    isConnected = true;
+    console.log("MongoDB connected");
   } catch (err) {
-    console.error("MongoDB connection error:", err)
+    console.error(err);
   }
-}
+};
 
-connectDB()
+app.use(async (req, res, next) => {
+  await connectDB();
+  next();
+});
 
-// =========================
-// ROUTES
-// =========================
-app.get('/', (req, res) => {
-  res.send('USAI API is running 🚀')
-})
-app.use('/api/reservations', reservationRoutes)
-app.use('/api/adminreservations', adminRoutes)
-app.use('/api/stripe', stripeRoutes)
+// Routes
+app.get("/", (req, res) => {
+  res.send("USAI API running 🚀");
+});
 
-// =========================
-// SERVER (RENDER READY)
-// =========================
-const PORT = process.env.PORT || 5000
+app.use("/api/reservations", reservationRoutes);
+app.use("/api/adminreservations", adminRoutes);
+app.use("/api/stripe", stripeRoutes);
 
-if (process.env.VERCEL) {
-  module.exports = app
-} else {
-  app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`)
-  })
-}
+module.exports = app;
