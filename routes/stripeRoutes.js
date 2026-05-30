@@ -51,8 +51,6 @@ router.post(
 
       const session =
         await stripe.checkout.sessions.create({
-          payment_method_types: ['card','paypal','klarna','sepa_debit'],
-
           mode: 'payment',
 
           customer_email: email,
