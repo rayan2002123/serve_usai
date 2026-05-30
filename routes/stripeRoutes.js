@@ -49,43 +49,33 @@ router.post(
         })
       }
 
-      const session =
-        await stripe.checkout.sessions.create({
-          //payment_method_types: ['card'],
+      const session = await stripe.checkout.sessions.create({
+        mode: 'payment',
 
-          mode: 'payment',
-
-          customer_email: email,
-
-          line_items: [
-            {
-              price_data: {
-                currency: 'eur',
-
-                product_data: {
-                  name:
-                    'USAI Reservation'
-                },
-
-                unit_amount:
-                  Math.round(
-                    Number(amount) * 100
-                  )
+        line_items: [
+          {
+            price_data: {
+              currency: 'eur',
+              product_data: {
+                name: 'USAI Reservation'
               },
-
-              quantity: 1
-            }
-          ],
-
-          success_url:
-            'https://united-of-student.vercel.app/success?session_id={CHECKOUT_SESSION_ID}',
-
-          cancel_url:
-            'https://united-of-student.vercel.app/cancel',
-          metadata: {
-            reservationId
+              unit_amount: Math.round(Number(amount) * 100)
+            },
+            quantity: 1
           }
-        })
+        ],
+
+        automatic_payment_methods: {
+          enabled: true
+        },
+
+        success_url: 'https://united-of-student.vercel.app/success?session_id={CHECKOUT_SESSION_ID}',
+        cancel_url: 'https://united-of-student.vercel.app/cancel',
+
+        metadata: {
+          reservationId
+        }
+      })
 
       return res.json({
         url: session.url
